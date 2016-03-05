@@ -51,7 +51,11 @@ instance ajaxMessageIsForeign :: IsForeign AjaxMsg where
 
 -- |=================================    UPDATE      =================================
 update :: forall eff. Pux.Update
-          (ajax :: A.AJAX, err :: EXCEPTION, console :: CONSOLE, ws :: WEBSOCKET | eff)
+          (ajax :: A.AJAX
+          , err :: EXCEPTION
+          , console :: CONSOLE
+          , d3  :: D3
+          , ws :: WEBSOCKET | eff)
           State
           Action
 update action (State state) input =
@@ -71,8 +75,8 @@ update action (State state) input =
       , effects: [ do log $ "Updated new state: " ++ msg ]
       }
     ButtonThree ->
-      { state: State state { banner = "Loading data from server..." }
-      , effects: [ doAjaxCall ]
+      { state: State state { banner = "Kicking it to D3" }
+      , effects: [ d3main ]
       }
     ButtonFour ->
       { state: State state
@@ -98,7 +102,7 @@ main :: forall e. Eff ( ws::WEBSOCKET
                       , console::CONSOLE
                       , d3 :: D3 | e ) Unit
 main = do
-  d3main
+  -- d3main
   wsInput <- S.channel (ReceiveWSData "foo")
   appState <- initialState wsInput "ws://echo.websocket.org" -- forall e. Eff (ws :: WEBSOCKET|e) State
   let wsSignal = S.subscribe wsInput :: S.Signal Action
