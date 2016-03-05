@@ -19,10 +19,12 @@ import Pux (Update, app) as Pux
 import Pux.Render.DOM (renderToDOM) as Pux
 import Signal (Signal) as S
 import Signal.Channel (CHANNEL(), Channel, channel, send, subscribe) as S
+import Graphics.D3.Base
 
 import State (State(State))
 import View (view)
 import Actions (Action(ReceiveWSData, ButtonFour, ButtonThree, ReceiveAJAXData, ButtonTwo, ButtonOne))
+import D3Ex
 
 -- |=================================    STATE      =================================
 initialState :: S.Channel Action -> String -> forall e. Eff (ws :: WEBSOCKET|e) State
@@ -93,8 +95,10 @@ main :: forall e. Eff ( ws::WEBSOCKET
                       , dom::DOM
                       , ajax::A.AJAX
                       , err::EXCEPTION
-                      , console::CONSOLE | e ) Unit
+                      , console::CONSOLE
+                      , d3 :: D3 | e ) Unit
 main = do
+  d3main
   wsInput <- S.channel (ReceiveWSData "foo")
   appState <- initialState wsInput "ws://echo.websocket.org" -- forall e. Eff (ws :: WEBSOCKET|e) State
   let wsSignal = S.subscribe wsInput :: S.Signal Action
