@@ -20,11 +20,13 @@ import Pux.Render.DOM (renderToDOM) as Pux
 import Signal (Signal) as S
 import Signal.Channel (CHANNEL(), Channel, channel, send, subscribe) as S
 import Graphics.D3.Base
+import Graphics.D3.Request
 
 import State (State(State))
 import View (view)
 import Actions (Action(ReceiveWSData, ButtonFour, ButtonThree, ReceiveAJAXData, ButtonTwo, ButtonOne))
 import D3Ex
+import D3Ex.GraphData
 
 -- |=================================    STATE      =================================
 initialState :: S.Channel Action -> String -> forall e. Eff (ws :: WEBSOCKET|e) State
@@ -36,18 +38,6 @@ initialState chan url = do
       S.send chan ((ReceiveWSData received) :: Action)
   let state = State { counter: 0, banner: "initial string", socket: connection }
   return state
-
--- |=================================    Ajax      =================================
-data AjaxMsg = AjaxMsg { version :: String, language :: String } -- {"version":"4.2.10092","language":"javax"}
-
-instance showAjaxMsg :: Show AjaxMsg where
-  show (AjaxMsg m) = "{ \"version\": \"" ++ m.version ++ "\"language\": \"" ++ m.language ++ "\" }"
-
-instance ajaxMessageIsForeign :: IsForeign AjaxMsg where
-  read value = do
-    version  <- readProp "version" value
-    language <- readProp "language" value
-    return $ AjaxMsg { version: version, language: language }
 
 -- |=================================    UPDATE      =================================
 update :: forall eff. Pux.Update
@@ -70,13 +60,13 @@ update action (State state) input =
       { state: State state { banner = msg }
       , effects: []
       }
-    ReceiveAJAXData msg ->
-      { state: State state { banner = msg }
-      , effects: [ do log $ "Updated new state: " ++ msg ]
+    ReceiveAJAXData v ->
+      { state: State state { banner = "fetched JSON using AJAX" }
+      , effects: [ d3main v ]
       }
     ButtonThree ->
       { state: State state { banner = "Kicking it to D3" }
-      , effects: [ d3main ]
+      , effects: []
       }
     ButtonFour ->
       { state: State state
@@ -85,11 +75,11 @@ update action (State state) input =
   where
     -- don't know how to write signature for this function!
     doAjaxCall = launchAff $ later' 1500 $ do
-      res <- A.get "http://localhost:8080/version"  -- requires something like json-server running on port 8080
+      res <- A.get "http://localhost:8080/graph"  -- requires something like json-server running on port 8080
       let response = readJSON res.response :: F AjaxMsg
       liftEff $ case response of
           (Left err) -> log "Error parsing JSON!"
-          (Right (AjaxMsg msg)) -> S.send input (singleton (ReceiveAJAXData msg.version))
+          (Right v)  -> S.send input (singleton (ReceiveAJAXData v))
     doWebSocketCall :: forall e. Connection -> Eff (ws::WEBSOCKET|e) Unit
     doWebSocketCall (Connection ws) =  do ws.send(Message "button four sends this message")
 
