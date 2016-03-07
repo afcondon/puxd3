@@ -1,6 +1,6 @@
 module Main where
 
-import Prelude (Unit, bind, ($), (-), (+), return)
+import Prelude (Unit, bind, ($), (-), (+), (++), return, show)
 import WebSocket (WEBSOCKET, Connection(Connection), Message(Message), URL(URL), runMessageEvent, runMessage, newWebSocket)
 import Control.Monad.Aff (later', launchAff)
 import Network.HTTP.Affjax as A
@@ -12,7 +12,7 @@ import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Console (CONSOLE(), log)
 import Data.Either (Either(Right, Left))
 import Data.Maybe (Maybe(Just, Nothing))
-import Data.Foreign (F)
+import Data.Foreign (F, ForeignError)
 import Data.Foreign.Class (readJSON)
 import Data.List (singleton)
 import DOM (DOM())
@@ -83,7 +83,7 @@ update action (State state) input =
       res <- A.get "http://localhost:8080/graph"  -- requires something like json-server running on port 8080
       let response = readJSON res.response :: F GraphDataRaw
       liftEff $ case response of
-          (Left err) -> log "Error parsing JSON!"
+          (Left err) -> log "Error parsing JSON!" -- ++ (show err)
           (Right gd) -> S.send input (singleton (ReceiveAJAXData gd))
     doWebSocketCall :: forall e. Connection -> Eff (ws::WEBSOCKET|e) Unit
     doWebSocketCall (Connection ws) =  do ws.send(Message "button four sends this message")

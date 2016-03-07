@@ -7,7 +7,7 @@ import Data.Traversable (traverse)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Generic (class Generic, gShow, gEq, gCompare)
 import Data.Foreign.Class (class IsForeign)
-import Data.Foreign.Generic (readGeneric, defaultOptions)
+import Data.Foreign.Generic (readGeneric, defaultOptions, Options)
 
 
 type GraphData = {
@@ -50,6 +50,9 @@ newtype RawLink = RawLink { source :: Int, target :: Int }
 
 derive instance genericRawNode :: Generic RawNode
 
+myOptions :: Options
+myOptions = defaultOptions { unwrapNewtypes = true }
+
 instance showRawNode :: Show RawNode where
   show = gShow
 instance eqRawNode :: Eq RawNode where
@@ -57,7 +60,7 @@ instance eqRawNode :: Eq RawNode where
 instance ordRawNode :: Ord RawNode where
   compare = gCompare
 instance isForeignRawNode :: IsForeign RawNode where
-  read = readGeneric defaultOptions
+  read = readGeneric myOptions
 
 derive instance genericRawLink :: Generic RawLink
 
@@ -68,7 +71,7 @@ instance eqRawLink :: Eq RawLink where
 instance ordRawLink :: Ord RawLink where
   compare = gCompare
 instance isForeignRawLink :: IsForeign RawLink where
-  read = readGeneric defaultOptions
+  read = readGeneric myOptions
 
 derive instance genericGraphDataRaw :: Generic GraphDataRaw
 
@@ -79,4 +82,4 @@ instance eqGraphDataRaw :: Eq GraphDataRaw where
 instance ordGraphDataRaw :: Ord GraphDataRaw where
   compare = gCompare
 instance isForeignGraphDataRaw :: IsForeign GraphDataRaw where
-  read = readGeneric defaultOptions
+  read = readGeneric myOptions
