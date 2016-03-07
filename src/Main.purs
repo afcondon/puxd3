@@ -71,7 +71,7 @@ update action (State state) input =
       }
     ButtonThree ->
       { state: State state { banner = "Kicking it to D3" }
-      , effects: []
+      , effects: [ doAjaxCall ]
       }
     ButtonFour ->
       { state: State state
