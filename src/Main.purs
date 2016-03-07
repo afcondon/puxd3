@@ -1,6 +1,6 @@
 module Main where
 
-import Prelude (class Show, Unit, bind, (++), ($), (-), (+), return)
+import Prelude (Unit, bind, ($), (-), (+), return)
 import WebSocket (WEBSOCKET, Connection(Connection), Message(Message), URL(URL), runMessageEvent, runMessage, newWebSocket)
 import Control.Monad.Aff (later', launchAff)
 import Network.HTTP.Affjax as A
@@ -11,22 +11,22 @@ import Control.Monad.Eff.Var (($=))
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Console (CONSOLE(), log)
 import Data.Either (Either(Right, Left))
+import Data.Maybe (Maybe(Just, Nothing))
 import Data.Foreign (F)
-import Data.Foreign.Class (class IsForeign, readJSON, readProp)
+import Data.Foreign.Class (readJSON)
 import Data.List (singleton)
 import DOM (DOM())
 import Pux (Update, app) as Pux
 import Pux.Render.DOM (renderToDOM) as Pux
 import Signal (Signal) as S
 import Signal.Channel (CHANNEL(), Channel, channel, send, subscribe) as S
-import Graphics.D3.Base
-import Graphics.D3.Request
+import Graphics.D3.Base (D3)
 
 import State (State(State))
 import View (view)
 import Actions (Action(ReceiveWSData, ButtonFour, ButtonThree, ReceiveAJAXData, ButtonTwo, ButtonOne))
-import D3Ex
-import D3Ex.GraphData
+import D3Ex (d3FL)
+import D3Ex.GraphData (GraphDataRaw, convertForD3)
 
 -- |=================================    STATE      =================================
 initialState :: S.Channel Action -> String -> forall e. Eff (ws :: WEBSOCKET|e) State
@@ -62,7 +62,12 @@ update action (State state) input =
       }
     ReceiveAJAXData v ->
       { state: State state { banner = "fetched JSON using AJAX" }
-      , effects: [ d3main v ]
+      , effects: [ case convertForD3 v of
+                   Nothing      -> log "Error converting data for D3"
+                   (Just graph) -> do
+                                    d3FL graph
+                                    log "successfully ran the D3 ForceLayout"
+                 ]
       }
     ButtonThree ->
       { state: State state { banner = "Kicking it to D3" }
@@ -76,10 +81,10 @@ update action (State state) input =
     -- don't know how to write signature for this function!
     doAjaxCall = launchAff $ later' 1500 $ do
       res <- A.get "http://localhost:8080/graph"  -- requires something like json-server running on port 8080
-      let response = readJSON res.response :: F AjaxMsg
+      let response = readJSON res.response :: F GraphDataRaw
       liftEff $ case response of
           (Left err) -> log "Error parsing JSON!"
-          (Right v)  -> S.send input (singleton (ReceiveAJAXData v))
+          (Right gd) -> S.send input (singleton (ReceiveAJAXData gd))
     doWebSocketCall :: forall e. Connection -> Eff (ws::WEBSOCKET|e) Unit
     doWebSocketCall (Connection ws) =  do ws.send(Message "button four sends this message")
 

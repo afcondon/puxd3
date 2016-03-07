@@ -1,4 +1,6 @@
 module Actions where
 
+import D3Ex.GraphData (GraphDataRaw)
+
 -- |=================================    ACTIONS      =================================
-data Action = ButtonOne | ButtonTwo | ButtonThree | ReceiveAJAXData String | ButtonFour | ReceiveWSData String
+data Action = ButtonOne | ButtonTwo | ButtonThree | ReceiveAJAXData GraphDataRaw | ButtonFour | ReceiveWSData String

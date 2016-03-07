@@ -1,6 +1,6 @@
-module D3Ex where
+module D3Ex (d3FL) where
 
-import Prelude(Unit(),bind,negate)
+import Prelude(Unit(),bind,negate,return)
 -- import Data.Either
 import Control.Monad.Eff (Eff)
 -- import Data.Foreign (Foreign)
@@ -34,11 +34,6 @@ d3FL graph = do
     .. attr "width" canvasWidth
     .. attr "height" canvasHeight
 
-  force
-   ... nodes graph.nodes
-    .. links graph.links
-    .. start
-
   link <- svg ... selectAll ".link"
       .. bindData graph.links
     .. enter .. append "line"
@@ -52,6 +47,11 @@ d3FL graph = do
       .. onDoubleClick doubleClickHandler
       .. createDrag drag
 
+  force
+   ... nodes graph.nodes
+    .. links graph.links
+    .. start
+
   force ... onTick \_ -> do
     link
      ... attr' "x1" (\d -> d.source.x)
@@ -62,6 +62,8 @@ d3FL graph = do
     node
      ... attr' "cx" _.x
       .. attr' "cy" _.y
+
+
 
 dragStartHandler :: forall d. d -> D3Eff Unit
 dragStartHandler = ffi ["d"] "d3.select(this).classed('fixed', d.fixed = true);"

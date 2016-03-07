@@ -1,6 +1,6 @@
 module D3Ex.GraphData where
 
-import Prelude(class Show, class Eq, class Ord, map, bind)
+import Prelude (class Ord, class Eq, class Show, bind, map)
 import Data.Array ((!!))
 import Data.Int (toNumber)
 import Data.Traversable (traverse)
