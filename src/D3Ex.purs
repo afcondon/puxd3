@@ -12,12 +12,16 @@ import Graphics.D3.Layout.Force (onTick, createDrag, start, onDragStart, drag, l
 -- import Graphics.D3.Scale
 import Graphics.D3.Selection (attr', onDoubleClick, attr, append, enter, bindData, selectAll, rootSelect)
 import Graphics.D3.Util ((..), (...))
+import Signal.Channel (CHANNEL(), Channel) as S
 -- import Data.List (List(Nil), singleton)
 
 import D3Ex.GraphData (GraphData)
+import Actions
 
-d3FL :: GraphData -> forall eff. Eff (d3 :: D3 | eff) ForceLayout
-d3FL graph = do
+d3FL :: GraphData
+    -> (forall d e. S.Channel Action -> d  -> Eff ( channel :: S.CHANNEL | e ) Unit)
+    -> forall eff. Eff (d3 :: D3 | eff) ForceLayout
+d3FL graph clickhandler = do
   let canvasWidth = 960.0
       canvasHeight = 500.0
 
@@ -44,8 +48,8 @@ d3FL graph = do
     .. enter .. append "circle"
       .. attr "class" "node"
       .. attr "r" 12.0
-      .. onDoubleClick doubleClickHandler
       .. createDrag drag
+      .. onDoubleClick clickhandler
 
   force
    ... nodes graph.nodes

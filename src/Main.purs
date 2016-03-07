@@ -20,7 +20,7 @@ import Pux (Update, app) as Pux
 import Pux.Render.DOM (renderToDOM) as Pux
 import Signal (Signal) as S
 import Signal.Channel (CHANNEL(), Channel, channel, send, subscribe) as S
-import Graphics.D3.Base (D3)
+import Graphics.D3.Base (D3, D3Eff)
 
 import State (State(State))
 import View (view)
@@ -65,12 +65,12 @@ update action (State state) input =
       , effects: [ case convertForD3 v of
                    Nothing      -> log "Error converting data for D3"
                    (Just graph) -> do
-                                    d3FL graph
+                                    d3FL graph puxD3ClickHandler
                                     log "successfully ran the D3 ForceLayout"
                  ]
       }
     ButtonThree ->
-      { state: State state { banner = "Kicking it to D3" }
+      { state: State state { banner = "Kicking it to D3 in 3...2...1..." }
       , effects: [ doAjaxCall ]
       }
     ButtonFour ->
@@ -80,7 +80,7 @@ update action (State state) input =
   where
     -- don't know how to write signature for this function!
     doAjaxCall = launchAff $ later' 1500 $ do
-      res <- A.get "http://localhost:8080/graph"  -- requires something like json-server running on port 8080
+      res <- A.get "http://localhost:8080/graph"  -- requires json-server or similar running on port 8080
       let response = readJSON res.response :: F GraphDataRaw
       liftEff $ case response of
           (Left err) -> log "Error parsing JSON!" -- ++ (show err)
@@ -88,7 +88,11 @@ update action (State state) input =
     doWebSocketCall :: forall e. Connection -> Eff (ws::WEBSOCKET|e) Unit
     doWebSocketCall (Connection ws) =  do ws.send(Message "button four sends this message")
 
--- |=================================    MAIN      =================================
+puxD3ClickHandler :: forall d e. S.Channel Action -> d  -> Eff ( channel :: S.CHANNEL | e ) Unit
+puxD3ClickHandler chan d = S.send chan ButtonOne
+
+
+-- |=================================     MAIN      =================================
 main :: forall e. Eff ( ws::WEBSOCKET
                       , channel::S.CHANNEL
                       , dom::DOM
@@ -99,11 +103,13 @@ main :: forall e. Eff ( ws::WEBSOCKET
 main = do
   -- d3main
   wsInput <- S.channel (ReceiveWSData "foo")
+  d3Input <- S.channel ButtonOne
   appState <- initialState wsInput "ws://echo.websocket.org" -- forall e. Eff (ws :: WEBSOCKET|e) State
   let wsSignal = S.subscribe wsInput :: S.Signal Action
+  let d3Signal = S.subscribe d3Input :: S.Signal Action
   Pux.renderToDOM "#app" =<< Pux.app
     { state: appState
     , update: update
     , view: view
-    , inputs: [wsSignal]
+    , inputs: [wsSignal, d3Signal]
     }
